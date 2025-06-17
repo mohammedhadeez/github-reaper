@@ -18,3 +18,14 @@ A powerful tool to search and batch clone GitHub repositories based on search cr
 ```bash
 git clone https://github.com/yourusername/github-reaper.git
 cd github-reaper
+
+```bash
+pip install -r requirements.txt
+
+```bash
+cp .env.example .env
+# Edit .env and add your GitHub personal access token
+
+```bash
+python main.py
+
