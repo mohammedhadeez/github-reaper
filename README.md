@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Edit .env and add your GitHub personal access token
+
 ```
 
 ```bash
