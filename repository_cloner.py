@@ -62,8 +62,6 @@ class RepositoryCloner:
             else:
                 failed.append(repo.full_name)
             
-            # Small delay between clones
-            time.sleep(0.5)
         
         return successful, failed
     
