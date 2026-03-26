@@ -1,6 +1,7 @@
 """GitHub API client for repository operations."""
 
 import time
+from itertools import islice
 from typing import List, Optional
 import requests
 from requests.exceptions import RequestException
@@ -65,9 +66,8 @@ class GitHubClient:
                 if not items:
                     break
                 
-                for item in items:
-                    if len(repositories) >= max_results:
-                        break
+                remaining = max_results - len(repositories)
+                for item in islice(items, max(0, remaining)):
                     repositories.append(Repository.from_api_response(item))
                 
                 page += 1
