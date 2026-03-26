@@ -12,6 +12,8 @@ from models import Repository, SearchResult
 class GitHubClient:
     """Client for interacting with GitHub API."""
     
+    RATE_LIMIT_THRESHOLD = 10  # Threshold for proactive delay
+
     def __init__(self, config: Config):
         """Initialize GitHub client with configuration."""
         self.config = config
@@ -73,7 +75,13 @@ class GitHubClient:
                 page += 1
                 
                 # Respect rate limiting
-                time.sleep(self.config.request_delay)
+                try:
+                    remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
+                except (ValueError, TypeError):
+                    remaining = 0
+
+                if remaining < self.RATE_LIMIT_THRESHOLD:
+                    time.sleep(self.config.request_delay)
                 
             except RequestException as e:
                 print(f"Error fetching page {page}: {e}")
