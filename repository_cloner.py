@@ -2,6 +2,7 @@
 
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
 from tqdm import tqdm
@@ -55,13 +56,25 @@ class RepositoryCloner:
         
         print(f"\nCloning {len(repos_to_clone)} repositories...")
         
-        for repo in tqdm(repos_to_clone, desc="Cloning"):
-            success = self._clone_single_repository(repo)
-            if success:
-                successful.append(repo.full_name)
-            else:
-                failed.append(repo.full_name)
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            # Create a mapping of futures to repository objects
+            future_to_repo = {
+                executor.submit(self._clone_single_repository, repo): repo
+                for repo in repos_to_clone
+            }
             
+            # Process as they complete
+            for future in tqdm(as_completed(future_to_repo), total=len(repos_to_clone), desc="Cloning"):
+                repo = future_to_repo[future]
+                try:
+                    success = future.result()
+                    if success:
+                        successful.append(repo.full_name)
+                    else:
+                        failed.append(repo.full_name)
+                except Exception as e:
+                    print(f"\nUnexpected error cloning {repo.full_name}: {e}")
+                    failed.append(repo.full_name)
         
         return successful, failed
     
