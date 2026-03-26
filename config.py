@@ -15,6 +15,7 @@ class Config:
     per_page: int = 100
     max_results: int = 1000
     request_delay: float = 1.0  # Delay between API requests in seconds
+    rate_limit_threshold: int = 10  # Only sleep if remaining rate limit is below this
     
     @classmethod
     def from_env(cls) -> "Config":

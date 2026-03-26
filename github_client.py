@@ -73,7 +73,15 @@ class GitHubClient:
                 page += 1
                 
                 # Respect rate limiting
-                time.sleep(self.config.request_delay)
+                remaining_header = response.headers.get("X-RateLimit-Remaining")
+                if remaining_header is not None:
+                    try:
+                        remaining = int(remaining_header)
+                        if remaining <= self.config.rate_limit_threshold:
+                            time.sleep(self.config.request_delay)
+                    except ValueError:
+                        # If header is not a valid integer, fallback to safe default (don't skip sleep)
+                        time.sleep(self.config.request_delay)
                 
             except RequestException as e:
                 print(f"Error fetching page {page}: {e}")
