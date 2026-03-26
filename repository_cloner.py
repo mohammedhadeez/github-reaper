@@ -1,7 +1,6 @@
 """Repository cloning functionality."""
 
 import subprocess
-import time
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
 from tqdm import tqdm
