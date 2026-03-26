@@ -2,6 +2,7 @@
 
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
 from tqdm import tqdm
@@ -25,7 +26,8 @@ class RepositoryCloner:
     def clone_repositories(
         self, 
         repositories: List[Repository],
-        indices: Optional[Set[int]] = None
+        indices: Optional[Set[int]] = None,
+        max_workers: int = 5
     ) -> Tuple[List[str], List[str]]:
         """
         Clone selected repositories.
@@ -33,6 +35,7 @@ class RepositoryCloner:
         Args:
             repositories: List of repositories to clone
             indices: Set of indices to clone (1-based), None for all
+            max_workers: Maximum number of concurrent workers
             
         Returns:
             Tuple of (successful_clones, failed_clones)
@@ -53,16 +56,30 @@ class RepositoryCloner:
         successful = []
         failed = []
         
-        print(f"\nCloning {len(repos_to_clone)} repositories...")
+        print(f"\nCloning {len(repos_to_clone)} repositories with {max_workers} workers...")
         
-        for repo in tqdm(repos_to_clone, desc="Cloning"):
-            success = self._clone_single_repository(repo)
-            if success:
-                successful.append(repo.full_name)
-            else:
-                failed.append(repo.full_name)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Map repositories to their future objects
+            future_to_repo = {
+                executor.submit(self._clone_single_repository, repo): repo
+                for repo in repos_to_clone
+            }
+
+            with tqdm(total=len(repos_to_clone), desc="Cloning") as pbar:
+                for future in as_completed(future_to_repo):
+                    repo = future_to_repo[future]
+                    try:
+                        success = future.result()
+                        if success:
+                            successful.append(repo.full_name)
+                        else:
+                            failed.append(repo.full_name)
+                    except Exception as e:
+                        pbar.write(f"Error cloning {repo.name}: {e}")
+                        failed.append(repo.full_name)
+                    finally:
+                        pbar.update(1)
             
-        
         return successful, failed
     
     def _clone_single_repository(self, repo: Repository) -> bool:
